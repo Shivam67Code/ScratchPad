@@ -59,7 +59,6 @@ const Scratchpad = () => {
 
     console.log('User typing, emitting update:', newContent);
     
-    // Update local state immediately
     setContent(newContent);
     
     // Emit real-time update to other users immediately
@@ -99,11 +98,10 @@ const Scratchpad = () => {
       console.log('Socket disconnected');
     };
 
-    // Listen for real-time updates from other users
     const handlePadUpdate = (data) => {
       console.log('Received real-time update:', data);
       
-      // Set flag to prevent emitting this change back
+      // flag to prevent emitting this change back
       isUpdatingFromSocket.current = true;
       
       // Update the content
@@ -116,7 +114,7 @@ const Scratchpad = () => {
     socket.on('disconnect', handleDisconnect);
     socket.on('pad-updated', handlePadUpdate);
 
-    // If already connected, join immediately
+    // If already connected-> join immediately
     if (socket.connected) {
       handleConnect();
     }
@@ -136,7 +134,6 @@ const Scratchpad = () => {
     };
   }, [id]);
 
-  // Load pad on mount
   useEffect(() => {
     if (id) {
       loadPad();
@@ -202,14 +199,12 @@ const Scratchpad = () => {
         </div>
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mx-4 mt-4 rounded">
           {error}
         </div>
       )}
 
-      {/* Main Content */}
       <div className="max-w-6xl mx-auto p-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <textarea

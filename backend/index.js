@@ -8,7 +8,7 @@ import { Server } from 'socket.io'
 const app = express();
 const server = createServer(app)
 
-// cors with socket io
+// Cors with socket io
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:5173",
@@ -84,7 +84,7 @@ io.on('connection', (socket) => {
     }
     writePads(pads)
 
-    // Broadcast to all OTHER users in the same pad room (not the sender)
+    // Broadcast to all OTHER users in the same pad room
     socket.to(padId).emit('pad-updated', {
       content,
       lastModified: pads[padId].lastModified
