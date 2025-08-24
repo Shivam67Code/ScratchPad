@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getAllPads } from '../../api';
+import { Outlet } from 'react-router-dom';
 
 const Home = () =>{
+  const location = useLocation();
+  const isOnPadRoute = location.pathname.startsWith('/pad/');
+
   const [padId, setPadId] = useState('');
   const [recentPads, setRecentPads] = useState([]);
   const [loading,setLoading] = useState(false);
@@ -42,6 +46,11 @@ const Home = () =>{
   useEffect(()=>{
     loadRecentPads();
   },[]);
+
+  // If weare on a pad route then just show the outlet
+  if (isOnPadRoute) {
+    return <Outlet />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
