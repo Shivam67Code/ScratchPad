@@ -7,10 +7,9 @@ import Scratchpad from './Scratchpad'
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <>
-      <Route path="/" element={<Home />} />
-      <Route path="/pad/:id" element={<Scratchpad />} />
-    </>
+    <Route path="/" element={<Home />} >
+      <Route path="pad/:id" element={<Scratchpad />} />
+    </Route>
   )
 )
 
