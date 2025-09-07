@@ -11,7 +11,7 @@ const Scratchpad = () => {
   const [lastSaved, setLastSaved] = useState(null);
   const [error, setError] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
-  
+
   // Flag to prevent loops when receiving socket updates
   const isUpdatingFromSocket = useRef(false);
   const saveTimeoutRef = useRef(null);
@@ -32,22 +32,34 @@ const Scratchpad = () => {
     }
   };
 
+  // Helper functions
+  const getWordCount = (text) => {
+    return text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+  };
+
+  const getCharCount = (text) => {
+    return text.length;
+  };
+
   // Save pad content with debounce
-  const savePadContent = useCallback(async (newContent) => {
-    if (isUpdatingFromSocket.current) return;
-    
-    try {
-      setSaving(true);
-      const response = await savePad(id, newContent);
-      setLastSaved(response.lastModified);
-      setError(null);
-    } catch (error) {
-      console.error('Error saving pad:', error);
-      setError('Failed to save changes');
-    } finally {
-      setSaving(false);
-    }
-  }, [id]);
+  const savePadContent = useCallback(
+    async (newContent) => {
+      if (isUpdatingFromSocket.current) return;
+
+      try {
+        setSaving(true);
+        const response = await savePad(id, newContent);
+        setLastSaved(response.lastModified);
+        setError(null);
+      } catch (error) {
+        console.error('Error saving pad:', error);
+        setError('Failed to save changes');
+      } finally {
+        setSaving(false);
+      }
+    },
+    [id]
+  );
 
   // Handle content changes - THIS IS CRUCIAL FOR REAL-TIME
   const handleContentChange = (newContent) => {
@@ -57,24 +69,22 @@ const Scratchpad = () => {
       return;
     }
 
-    console.log('User typing, emitting update:', newContent);
-    
+    // console.log('User typing, emitting update:', newContent);
+
     setContent(newContent);
-    
+
     // Emit real-time update to other users immediately
     if (socket.connected) {
       socket.emit('pad-update', {
         padId: id,
-        content: newContent
+        content: newContent,
       });
     }
-    
-    // Clear existing save timeout
+
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-    
-    // Set debounced save
+
     saveTimeoutRef.current = setTimeout(() => {
       savePadContent(newContent);
     }, 300);
@@ -85,14 +95,13 @@ const Scratchpad = () => {
     if (!id) return;
 
     console.log('Setting up socket for pad:', id);
-    
-    // Track connection status
+
     const handleConnect = () => {
       setIsConnected(true);
       console.log('Socket connected, joining pad:', id);
       socket.emit('join-pad', id);
     };
-    
+
     const handleDisconnect = () => {
       setIsConnected(false);
       console.log('Socket disconnected');
@@ -100,16 +109,13 @@ const Scratchpad = () => {
 
     const handlePadUpdate = (data) => {
       console.log('Received real-time update:', data);
-      
-      // flag to prevent emitting this change back
+
       isUpdatingFromSocket.current = true;
-      
-      // Update the content
+
       setContent(data.content);
       setLastSaved(data.lastModified);
     };
 
-    // Set up event listeners
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.on('pad-updated', handlePadUpdate);
@@ -126,7 +132,7 @@ const Scratchpad = () => {
       socket.off('disconnect', handleDisconnect);
       socket.off('pad-updated', handlePadUpdate);
       socket.emit('leave-pad', id);
-      
+
       // Clear save timeout
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -177,19 +183,26 @@ const Scratchpad = () => {
             <div>
               <h1 className="text-xl font-semibold text-gray-800">
                 Pad: {id}
-                <span className={`ml-2 text-xs px-2 py-1 rounded ${
-                  isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
+                <span
+                  className={`ml-2 text-xs px-2 py-1 rounded ${
+                    isConnected
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}
+                >
                   {isConnected ? 'Connected' : 'Disconnected'}
                 </span>
               </h1>
               <p className="text-sm text-gray-500">
-                {lastSaved && `Last saved: ${new Date(lastSaved).toLocaleString()}`}
-                {saving && <span className="text-blue-500 ml-2">Saving...</span>}
+                {lastSaved &&
+                  `Last saved: ${new Date(lastSaved).toLocaleString()}`}
+                {saving && (
+                  <span className="text-blue-500 ml-2">Saving...</span>
+                )}
               </p>
             </div>
           </div>
-          
+
           <button
             onClick={copyLink}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center gap-2"
@@ -208,17 +221,27 @@ const Scratchpad = () => {
       <div className="max-w-6xl mx-auto p-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <textarea
-            value={content}
+            value={content} // Changed from noteContent to content
             onChange={(e) => handleContentChange(e.target.value)}
             placeholder="Start typing your notes here... Changes are synced in real-time!"
             className="w-full h-[70vh] p-6 border-none resize-none focus:outline-none text-gray-700 leading-relaxed"
             style={{ fontFamily: 'monospace' }}
           />
+          <div className="text-sm text-gray-500 mt-2 flex justify-between">
+            <span>Characters: {getCharCount(content)}</span> {/* Changed from noteContent to content */}
+            <span>Words: {getWordCount(content)}</span>       {/* Changed from noteContent to content */}
+          </div>
         </div>
-        
+
         <div className="mt-4 text-center text-sm text-gray-500">
-          <p>Share this link with others to collaborate: <strong>{window.location.href}</strong></p>
-          <p className="mt-1">Real-time collaboration is {isConnected ? 'ACTIVE' : 'INACTIVE'}</p>
+          <p>
+            Share this link with others to collaborate:{' '}
+            <strong>{window.location.href}</strong>
+          </p>
+          <p className="mt-1">
+            Real-time collaboration is{' '}
+            {isConnected ? 'ACTIVE' : 'INACTIVE'}
+          </p>
         </div>
       </div>
     </div>
